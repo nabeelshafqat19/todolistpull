@@ -1,0 +1,34 @@
+trigger:
+- main
+
+pool:
+  name: todopull
+
+workspace:
+  clean: all  # Ensures fresh workspace
+
+variables:
+- name: GITHUB_USERNAME
+  value: 'nabeelshafqat19'
+- name: GITHUB_PAT
+  value: ''
+
+jobs:
+- job: SyncRepos
+  steps:
+  - checkout: none
+
+  - script: |
+      git clone https://github.com/dockersamples/todo-list-app.git
+    displayName: 'Clone source repo'
+
+  - script: |
+      git clone https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com/nabeelshafqat19/to-do-list-from-git.git
+      xcopy /E /Y /I "todo-list-app\*" "to-do-list-from-git\"
+      cd to-do-list-from-git
+      git add .
+      git commit -m "Sync: $(Build.BuildNumber) [skip ci]"
+      git push origin main
+    displayName: 'Sync to target'
+    env:
+      GITHUB_PAT: $(GITHUB_PAT)
