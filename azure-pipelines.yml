@@ -2,39 +2,37 @@ trigger:
 - main
 
 pool:
-  name: todopull  # Pool defined at top level
+  name: todopull
 
 variables:
 - name: GITHUB_USERNAME
-  value: 'nabeelshafqat19'  # Case-sensitive GitHub username
-- name: GITHUB_PAT  # Secret variable (set in pipeline variables)
-  value: ''  # 👈 Replace with your PAT in Azure DevOps variables
+  value: 'nabeelshafqat19'
+- name: GITHUB_PAT
+  value: ''
 
 jobs:
 - job: SyncRepos
-  pool:
-    name: todopull
   steps:
   - checkout: none
 
-  # Step 1: Clean workspace
+  # Fixed cleanup step
   - script: |
-      if exist todo-list-app (rmdir /s /q todo-list-app)
-      if exist todolistpull (rmdir /s /q todolistpull)  # Changed directory name
+      @echo off
+      if exist "todo-list-app" rmdir /s /q "todo-list-app"
+      if exist "todolistpull" rmdir /s /q "todolistpull"
+      exit 0
     displayName: 'Clean previous runs'
 
-  # Step 2: Clone source repo
   - script: git clone https://github.com/dockersamples/todo-list-app.git
     displayName: 'Clone source repo'
 
-  # Step 3: Sync to target repo (UPDATED NAME)
   - script: |
-      git config --global user.name "Azure Pipeline"
-      git config --global user.email "azure-pipelines@example.com"
-
-      git clone https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com/nabeelshafqat19/todolistpull.git  # Changed repo name
-      xcopy /E /Y /I "todo-list-app\*" "todolistpull\"  # Changed destination
-      cd todolistpull  # Changed directory
+      git config --global user.name "nabeelshafqat19"
+      git config --global user.email "hopnesscrew@gmail.com"
+      
+      git clone https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com/nabeelshafqat19/todolistpull.git
+      xcopy /E /Y /I "todo-list-app\*" "todolistpull\"
+      cd todolistpull
       git add .
       git commit -m "Auto-sync: $(Build.BuildNumber) [skip ci]"
       git push origin main
