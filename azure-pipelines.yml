@@ -2,33 +2,42 @@ trigger:
 - main
 
 pool:
-  name: todopull
-
-workspace:
-  clean: all  # Ensures fresh workspace
+  name: todopull  # Pool defined at top level
 
 variables:
 - name: GITHUB_USERNAME
-  value: 'nabeelshafqat19'
-- name: GITHUB_PAT
-  value: ''
+  value: 'nabeelshafqat19'  # Case-sensitive GitHub username
+- name: GITHUB_PAT  # Secret variable (set in pipeline variables)
+  value: ''  # 👈 Replace with your PAT in Azure DevOps variables
 
-jobs:
+jobs:  # ✅ Top-level 'jobs' key (properly ordered)
 - job: SyncRepos
+  pool:  # Optional: Override pool for this job
+    name: todopull
   steps:
-  - checkout: none
+  - checkout: none  # Disable default checkout
 
+  # Step 1: Clean workspace
   - script: |
-      git clone https://github.com/dockersamples/todo-list-app.git
+      if exist todo-list-app (rmdir /s /q todo-list-app)
+      if exist to-do-list-from-git (rmdir /s /q to-do-list-from-git)
+    displayName: 'Clean previous runs'
+
+  # Step 2: Clone source repo
+  - script: git clone https://github.com/dockersamples/todo-list-app.git
     displayName: 'Clone source repo'
 
+  # Step 3: Sync to target repo
   - script: |
+      git config --global user.name "Azure Pipeline"
+      git config --global user.email "azure-pipelines@example.com"
+
       git clone https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com/nabeelshafqat19/to-do-list-from-git.git
       xcopy /E /Y /I "todo-list-app\*" "to-do-list-from-git\"
       cd to-do-list-from-git
       git add .
-      git commit -m "Sync: $(Build.BuildNumber) [skip ci]"
+      git commit -m "Auto-sync: $(Build.BuildNumber) [skip ci]"
       git push origin main
-    displayName: 'Sync to target'
+    displayName: 'Push to target repo'
     env:
-      GITHUB_PAT: $(GITHUB_PAT)
+      GITHUB_PAT: $(GITHUB_PAT)  # Pass PAT securely
