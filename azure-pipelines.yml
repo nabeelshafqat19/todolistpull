@@ -2,36 +2,42 @@ trigger:
 - main
 
 pool:
-  name: todopull
+  name: todopull  # Windows agent required for xcopy
 
 variables:
 - name: GITHUB_USERNAME
-  value: 'nabeelshafqat19'
+  value: 'nabeelshafqat19'  # Case-sensitive
+- name: GITHUB_PAT_ENCODED  # Store URL-encoded PAT here
+  value: ''  # 👈 Set in Azure DevOps variables
 
 jobs:
 - job: SyncRepos
   steps:
   - checkout: none
-  
+
+  # Step 1: Clean workspace
   - script: |
       @echo off
       if exist "todo-list-app" rmdir /s /q "todo-list-app"
       if exist "todolistpull" rmdir /s /q "todolistpull"
-    displayName: 'Clean workspace'
+    displayName: 'Clean previous runs'
 
+  # Step 2: Clone source repo
   - script: git clone https://github.com/dockersamples/todo-list-app.git
-    displayName: 'Clone source'
+    displayName: 'Clone source repo'
 
+  # Step 3: Push to target (Critical Fix Below)
   - script: |
-      git config --global credential.helper store
-      echo https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com >> ~/.git-credentials
+      git config --global user.name "nabeelshafqat19"
+      git config --global user.email "hopnesscrew@gmail.com"
       
-      git clone https://github.com/nabeelshafqat19/todolistpull.git
+      git -c http.extraHeader="Authorization: Basic %GITHUB_PAT_ENCODED%" clone https://github.com/nabeelshafqat19/todolistpull.git
       xcopy /E /Y /I "todo-list-app\*" "todolistpull\"
+      
       cd todolistpull
       git add .
-      git commit -m "Sync: $(Build.BuildNumber) [skip ci]"
-      git push origin main
-    displayName: 'Push to target'
+      git commit -m "Auto-sync: $(Build.BuildNumber) [skip ci]"
+      git -c http.extraHeader="Authorization: Basic %GITHUB_PAT_ENCODED%" push origin main
+    displayName: 'Push to target repo'
     env:
-      GITHUB_PAT: $(GITHUB_PAT)
+      GITHUB_PAT_ENCODED: $(GITHUB_PAT_ENCODED)
