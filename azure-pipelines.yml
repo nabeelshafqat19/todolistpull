@@ -7,35 +7,31 @@ pool:
 variables:
 - name: GITHUB_USERNAME
   value: 'nabeelshafqat19'
-- name: GITHUB_PAT
-  value: ''
 
 jobs:
 - job: SyncRepos
   steps:
   - checkout: none
-
-  # Fixed cleanup step
+  
   - script: |
       @echo off
       if exist "todo-list-app" rmdir /s /q "todo-list-app"
       if exist "todolistpull" rmdir /s /q "todolistpull"
-      exit 0
-    displayName: 'Clean previous runs'
+    displayName: 'Clean workspace'
 
   - script: git clone https://github.com/dockersamples/todo-list-app.git
-    displayName: 'Clone source repo'
+    displayName: 'Clone source'
 
   - script: |
-      git config --global user.name "nabeelshafqat19"
-      git config --global user.email "hopnesscrew@gmail.com"
+      git config --global credential.helper store
+      echo https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com >> ~/.git-credentials
       
-      git clone https://$(GITHUB_USERNAME):$(GITHUB_PAT)@github.com/nabeelshafqat19/todolistpull.git
+      git clone https://github.com/nabeelshafqat19/todolistpull.git
       xcopy /E /Y /I "todo-list-app\*" "todolistpull\"
       cd todolistpull
       git add .
-      git commit -m "Auto-sync: $(Build.BuildNumber) [skip ci]"
+      git commit -m "Sync: $(Build.BuildNumber) [skip ci]"
       git push origin main
-    displayName: 'Push to target repo'
+    displayName: 'Push to target'
     env:
       GITHUB_PAT: $(GITHUB_PAT)
